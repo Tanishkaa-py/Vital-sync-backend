@@ -5,6 +5,9 @@ require('dotenv').config();
 
 const authRoutes = require('./routes/auth');
 const patientRoutes = require('./routes/patients');
+const appointmentRoutes = require('./routes/appointments');
+const prescriptionRoutes = require('./routes/prescriptions');
+const paymentRoutes = require('./routes/payments');
 
 const app = express();
 
@@ -16,9 +19,29 @@ app.use(express.json());
 
 app.use('/api/auth', authRoutes);
 app.use('/api/patients', patientRoutes);
+app.use('/api/appointments', appointmentRoutes);
+app.use('/api/prescriptions', prescriptionRoutes);
+app.use('/api/payments', paymentRoutes);
 
 app.get('/', (req, res) => {
-  res.json({ message: 'VitalSync API is running', status: 'healthy' });
+  res.json({
+    message: 'VitalSync API is running',
+    status: 'healthy',
+    routes: [
+      'POST   /api/auth/register',
+      'POST   /api/auth/login',
+      'GET    /api/appointments',
+      'POST   /api/appointments',
+      'PUT    /api/appointments/:id',
+      'DELETE /api/appointments/:id',
+      'GET    /api/prescriptions',
+      'POST   /api/prescriptions',
+      'PUT    /api/prescriptions/:id',
+      'DELETE /api/prescriptions/:id',
+      'POST   /api/payments/create-checkout-session',
+      'GET    /api/payments/verify/:sessionId',
+    ],
+  });
 });
 
 const PORT = process.env.PORT || 5000;
@@ -32,4 +55,4 @@ mongoose
   .catch((err) => {
     console.error('MongoDB connection failed:', err.message);
     process.exit(1);
-  });   
+  });
