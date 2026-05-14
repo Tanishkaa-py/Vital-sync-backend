@@ -12,6 +12,7 @@ const { generalLimiter } = require('./middleware/rateLimiter');
 const { globalErrorHandler } = require('./middleware/errorHandler');
 
 const app = express();
+
 app.set('trust proxy', 1);
 
 const allowedOrigins = [
