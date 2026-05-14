@@ -12,24 +12,40 @@ const { generalLimiter } = require('./middleware/rateLimiter');
 const { globalErrorHandler } = require('./middleware/errorHandler');
 
 const app = express();
+app.set('trust proxy', 1);
+
+const allowedOrigins = [
+  process.env.FRONTEND_URL,
+].filter(Boolean);
 
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+  origin: (origin, callback) => {
+    if (!origin) {
+      if (process.env.NODE_ENV === 'development') {
+        return callback(null, true);
+      }
+      return callback(new Error('No origin — blocked in production'), false);
+    }
+    if (process.env.NODE_ENV === 'production' && origin.includes('localhost')) {
+      return callback(new Error('localhost not allowed in production'), false);
+    }
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    return callback(new Error(`CORS blocked: ${origin} not allowed`), false);
+  },
   credentials: true,
 }));
-app.use(express.json({ limit: '10kb' }));
 
-// Apply general rate limiter to all routes
-app.use(generalLimiter);
+app.use(express.json({ limit: '10kb' }));  // parse request bodies
+app.use(generalLimiter);                   // apply rate limit to all routes
 
-// Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/appointments', appointmentRoutes);
 app.use('/api/prescriptions', prescriptionRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/ai', aiRoutes);
 
-// Health check
 app.get('/', (req, res) => {
   res.status(200).json({
     status: 'success',
@@ -39,7 +55,6 @@ app.get('/', (req, res) => {
   });
 });
 
-// 404 handler for unknown routes
 app.use('*', (req, res) => {
   res.status(404).json({
     status: 'error',
@@ -48,7 +63,6 @@ app.use('*', (req, res) => {
   });
 });
 
-// Global error handler — must be last
 app.use(globalErrorHandler);
 
 const PORT = process.env.PORT || 5000;
